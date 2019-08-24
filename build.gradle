@@ -19,8 +19,8 @@ repositories {
 dependencies {
     testImplementation('org.junit.jupiter:junit-jupiter:5.4.2')
 
-    compile group: 'commons-codec', name: 'commons-codec', version: '1.5'
-    compile group: 'commons-io', name: 'commons-io', version: '2.4'
+    implementation 'commons-codec:commons-codec:1.5'
+    implementation 'commons-io:commons-io:2.4'
 
     implementation 'org.slf4j:slf4j-api:1.7.25'
     implementation 'org.slf4j:slf4j-log4j12:1.7.25'
