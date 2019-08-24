@@ -20,7 +20,7 @@ public interface BlockedWord {
     int getLength();
 
     /**
-     * Gets the percentage the word consists of numbers (0-1).
+     * Gets the percentage the word consists of numbers (0-100).
      *
      * @return The percentage the word consists of numbers
      */

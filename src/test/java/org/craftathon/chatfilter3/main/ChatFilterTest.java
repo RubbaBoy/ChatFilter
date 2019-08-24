@@ -4,6 +4,7 @@ import org.craftathon.chatfilter3.dictionary.DefaultDictionaryManager;
 import org.craftathon.chatfilter3.dictionary.DictionaryManager;
 import org.craftathon.chatfilter3.qobjects.QChar;
 import org.craftathon.chatfilter3.qobjects.QString;
+import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,19 +14,37 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ChatFilterTest {
 
     private static Logger LOGGER = LoggerFactory.getLogger(ChatFilterTest.class);
 
+    private static ChatFilter chatFilter;
+
+    @BeforeAll
+    public static void setUp() {
+        chatFilter = new DefaultChatFilter();
+        var blocked = new HashMap<>(DefaultChatFilter.getBlocked());
+        // Blocked and whitelist are to ensure that the necessary inputs are available during most tests, so the logic
+        // of the code is working properly. Some edge cases may occur while all words are available, which is why they
+        // are also added. It may be worth having two runs of tests: One as it is now, and one with just the words
+        // necessary.
+        blocked.putAll(Map.of(
+                "fuck", 1,
+                "a{ss}", 0,
+                "s!ex", 0
+        ));
+        chatFilter.setBlockFullWord(false);
+        chatFilter.setMaxNumberPercentage(75);
+        chatFilter.init(blocked, Arrays.asList("assault", "assist"));
+    }
+
     @Test
     public void checkQCharsOriginality() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init();
-        List<Character> used = new ArrayList<>();
-
-        List<QChar> withoutSpaces = new ArrayList<>(chatFilter.getQuantumCharList());
+        var used = new ArrayList<Character>();
+        var withoutSpaces = new ArrayList<>(chatFilter.getQuantumCharList());
         withoutSpaces.remove(withoutSpaces.size() - 1);
 
         for (QChar qChar : withoutSpaces) {
@@ -44,11 +63,8 @@ public class ChatFilterTest {
 
     @Test
     public void wordReconstruction() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init();
-
-        for (int i = 0; i < 100; i++) {
-            String string = generateString(100);
+        for (int i = 0; i < 10; i++) {
+            String string = generateString(20);
             QString inputQString = new QString(chatFilter, string).stripRepeating();
             assertEquals(string, inputQString.reconstruct());
         }
@@ -56,24 +72,19 @@ public class ChatFilterTest {
 
     @Test
     public void basicWordRecognition() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init(Collections.singletonMap("fuck", 1));
-
-       Map.of(
+        assertClean(chatFilter,
                 "fuck", "****",
                 "fuck test", "**** test",
                 "test fuck", "test ****",
                 "test fuck test", "test **** test",
                 "test fuuuuuck test", "test ******** test",
-                "test fffuuucccck test", "test *********** test").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));
+                "test fffuuucccck test", "test *********** test");
     }
 
     @Test
     public void integratedWordRecognition() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init(Collections.singletonMap("fuck", 1));
-
-        Map.of(
+        chatFilter.setBlockFullWord(true);
+        assertClean(chatFilter,
                 "fuck", "****",
                 "fucktest", "********",
                 "testfuck", "********",
@@ -81,64 +92,51 @@ public class ChatFilterTest {
                 "testfuuuuucktest", "****************",
                 "test testfucktest test", "test ************ test",
                 "test fucktest test", "test ******** test",
-                "test testfuck test", "test ******** test").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));
+                "test testfuck test", "test ******** test");
+        chatFilter.setBlockFullWord(false);
     }
 
     @Test
     public void duplicateCharacterPreservation() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init(Collections.singletonMap("a{ss}", 0));
-
-        Map.of(
+        assertClean(chatFilter,
                 "ass", "***",
                 "as", "as",
                 "asss", "****",
                 "test as test", "test as test",
                 "test asssssss test", "test ******** test",
-                "test a sssss test", "test ******* test").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));
+                "test a sssss test", "test ******* test");
     }
 
     @Test
     public void noCharacterSeparation() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init(Collections.singletonMap("s!ex", 0));
-
-        Map.of(
+        assertClean(chatFilter,
                 "sex", "***",
                 "test s ex test", "test s ex test",
                 "test seeex test", "test ***** test",
-                "test s eeex test", "test s eeex test").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));
+                "test s eeex test", "test s eeex test");
     }
 
     @Test
     public void numberThreshold() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init(Collections.singletonMap("a{ss}", 0));
-        chatFilter.setMaxNumberPercentage(75);
-
-        Map.of(
+        assertClean(chatFilter,
                 "ass", "***",
                 "test 45 test", "test 45 test",
                 "test 455 test", "test 455 test",
-                "test 4sss test", "test **** test").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));
+                "test 4sss test", "test **** test");
     }
 
     @Test
     public void wordWhitelist() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init(Collections.singletonMap("a{ss}", 0), Arrays.asList("assault", "assist"));
-        chatFilter.setBlockFullWord(false);
-
-        Map.of(
+        assertClean(chatFilter,
                 "ass", "***",
                 "assault", "assault",
                 "test assist ass assault", "test assist *** assault",
-                "assisttest ass asstest assault", "***isttest *** ***test assault").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));
+                "assisttest ass asstest assault", "***isttest *** ***test assault");
     }
 
     @Test
     public void dictionaryDownload() {
-        LOGGER.info("Downloading/Reading dictionary...");
+        LOGGER.debug("Downloading/Reading dictionary...");
         DictionaryManager dictionaryManager = new DefaultDictionaryManager();
         try {
             dictionaryManager.readFile();
@@ -147,35 +145,45 @@ public class ChatFilterTest {
             e.printStackTrace();
         }
 
-        LOGGER.info("{} dictionary lines found.", dictionaryManager.getDictionaryLines().size());
+        LOGGER.debug("{} dictionary lines found.", dictionaryManager.getDictionaryLines().size());
 
         assertTrue(dictionaryManager.getDictionaryLines().size() > 0);
     }
 
     @Test
     public void specialCharacters() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init(Collections.singletonMap("a{ss}", 0));
-        chatFilter.setBlockFullWord(false);
-
-        Map.of(
+        assertClean(chatFilter,
                 "./test", "./test",
                 ".test", ".test",
                 ":test", ":test",
                 "%%%%test", "%%%%test",
-                ". /test", ". /test").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));
+                ". /test", ". /test");
     }
 
     @Test
     public void puncuationSpace() {
-        ChatFilter chatFilter = new ChatFilter();
-        chatFilter.init(Collections.singletonMap("fuck", 1));
-        chatFilter.setBlockFullWord(false);
-
-        Map.of(
+        assertClean(chatFilter,
                 "fuck, it", "****, it",
                 "fuck! 111", "****! 111",
-                "fuck! 123", "****! 123").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));
+                "fuck! 123", "****! 123"
+        );
+    }
+
+    @Test
+    public void randomStrings() {
+        assertClean(chatFilter,
+                "45 ass 455 a55 4ss 4ss ass 4ss grass", "45 *** 455 *** *** *** *** *** grass",
+                "This is a fuu\uff55\uff55\uff55uckin  big asss message of some of the fuckin amazing things that the filter can accomplish ya piece of shit", "This is a *********in  big **** message of some of the ****in amazing things that the filter can accomplish ya piece of****t",
+                "i don't like this", "i don't like this",
+                "This bitch 4ss shit better work I swear to fucking god", "This ***** *** **** better work I swear to ****ing god",
+                "assisttest ass asstest assault", "***isttest *** ***test assault"
+        );
+    }
+
+    private static void assertClean(ChatFilter chatFilter, String... dirtyClean) {
+        for (int i = 0; i < dirtyClean.length / 2; i += 2) {
+            assertEquals(dirtyClean[i + 1], chatFilter.clean(dirtyClean[i]));
+        }
     }
 
     private String generateString(int length) {

@@ -17,12 +17,17 @@ public interface DictionaryManager {
     void readFile() throws URISyntaxException, IOException;
 
     /**
+     * Indexes all the dictionary words according the the given {@link BadWord}s.
      *
-     *
-     * @param badWordList
-     * @return
+     * @param badWordList The {@link BadWord}s to index off of
+     * @return The whitelisted words
      */
     List<String> indexWords(List<BadWord> badWordList);
 
+    /**
+     * Gets all raw lines of the dictionary
+     *
+     * @return The lines of the dictionary
+     */
     List<String> getDictionaryLines();
 }
