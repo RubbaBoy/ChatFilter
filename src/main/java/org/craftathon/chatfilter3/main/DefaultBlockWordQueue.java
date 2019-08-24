@@ -113,7 +113,7 @@ public class DefaultBlockWordQueue implements BlockWordQueue {
 
     @Override
     public String applyBlocks() {
-        StringBuilder stringBuilder = new StringBuilder();
+        var stringBuilder = new StringBuilder();
         int currentIndex = 0;
         BlockedWord nextBlocked = this.blocked.size() > 0 ? this.blocked.get(currentIndex) : null;
 

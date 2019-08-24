@@ -129,7 +129,7 @@ public class DefaultBadWord implements BadWord {
 
     @Override
     public boolean allowedNext(QChar previous, QChar qChar) {
-        QChar current = this.qChars.get(this.currentIndex);
+        var current = this.qChars.get(this.currentIndex);
 
         if (qChar.isSpace(chatFilter)) {
             lastWasSpace = true;
@@ -145,32 +145,18 @@ public class DefaultBadWord implements BadWord {
             }
 
             this.currentIndex++;
-
-            if (current.isPlaceholder()) {
-                current = this.qChars.get(this.currentIndex);
-                this.currentIndex++;
-            }
-
+            if (current.isPlaceholder()) current = this.qChars.get(this.currentIndex++);
         }
 
-        QChar before = this.currentIndex - 2 >= 0 ? this.qChars.get(this.currentIndex - 2) : null;
+        var before = this.currentIndex - 2 >= 0 ? this.qChars.get(this.currentIndex - 2) : null;
 
         if (before != null && lastWasSpace && before.equalsIgnoreCase(qChar)) {
             lastWasSpace = false;
             currentIndex--;
-
-            if (priority == 0) {
-                return chatFilter.isSpace(previous);
-            }
-
-            return true;
+            return priority != 0 || chatFilter.isSpace(previous);
         } else if (current.equalsIgnoreCase(qChar) && current.getRepetition() <= qChar.getRepetition()) {
             lastWasSpace = false;
-            if (priority == 0) {
-                return chatFilter.isSpace(previous) || this.currentIndex != 1;
-            }
-
-            return true;
+            return priority != 0 || (chatFilter.isSpace(previous) || this.currentIndex != 1);
         }
 
         return false;

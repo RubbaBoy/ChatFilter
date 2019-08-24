@@ -8,6 +8,16 @@ This is version 3 of the Chat Filter, which uses less than half the amount of co
 
 The original flowchart of the Chat Filter can be found [here](https://drive.google.com/file/d/1tqvZT-RA78aj1LBpQqk_jVMRbP4KrDth/view?usp=sharing). This flowchart was made before the development of v3 even started, and the internal process shown in the chart is nearly identical at most parts to how the inner code works. This document outlines some of the core concepts the Chat Filter v3 uses, and gives an understanding of how it detects certain things, how to use things, etc.
 
+# Custom Utilities
+
+## QChars
+
+QChars are a custom created object to easily compare characters that have multiple values. Its name is short for **Quantum Characters**, as they can *be* multiple values at the same time, and be identified as the same values, from other characters, or QChars. This is used when characters like **A** and **4** look similar, but can not be compared with a single **.equals** method. A QChar can make an **A** and a **4** be the same value, in only one character space in a **QString** (See below). Instead of a word being as an example **ass**, which can not be compared with **4ss**, **a5s**, **a55**, etc., it may print out as **(0|a|4)(1|s|5)(2|s|5)**. This is compiled into a **QString** (See below) where each character can be compared to any of its values (Shown after the first character, an index, all separated by the pipe character **|**). A QChar can be created by a normal character to be compared with other QChars. A list of QChars are created in another class, each QChar consisting of every character that looks like one another, so any of the containing values/chars can be equal to each of those QChars, which each bad word is made up of those QChars in a **QString** (See below). A QChar can contain a repetition value, which is used for characters that are required to be repeated. If it is more than 1, this value is displayed before the index when printed out with an **x** before it, for clarification that it is the repetition value. As an example, **ass**, may be printed out as **(0|a|4)(x2|1|s|5)**.
+
+## QStrings
+
+QStrings, short for **Quantum Strings**, is just a collection of **QChar**s, that have many of the same methods as a normal String, because it behaves as one. QStrings can be compared to each other using **#equals**, **#equalsIgnoreCase**, **#contains**, etc. A QString can be created by a normal String to be compared with other QStrings.
+
 # Word List
 
 ## Formatting
@@ -46,14 +56,4 @@ When the input is ready to be parsed, it is stripped of repeating characters and
 
 When each bad word has been looped through, sort the bad words from the internal list from least to greatest by their index they appear in. It then goes through each bad word, and checks if the previous and next word overlap the current word, or they overlap it. It removes the lowest priority word that is being overlapped/overlapping.
 
-After that, the system goes through each of characters of the input string, if it comes across an index of a bad word in the final list set above, replace it with a *.
-
-# Custom Utilities
-
-## QChars
-
-QChars are a custom created object to easily compare characters that have multiple values. Its name is short for **Quantum Characters**, as they can *be* multiple values at the same time, and be identified as the same values, from other characters, or QChars. This is used when characters like **A** and **4** look similar, but can not be compared with a single **.equals** method. A QChar can make an **A** and a **4** be the same value, in only one character space in a **QString** (See below). Instead of a word being as an example **ass**, which can not be compared with **4ss**, **a5s**, **a55**, etc., it may print out as **(0|a|4)(1|s|5)(2|s|5)**. This is compiled into a **QString** (See below) where each character can be compared to any of its values (Shown after the first character, an index, all separated by the pipe character **|**). A QChar can be created by a normal character to be compared with other QChars. A list of QChars are created in another class, each QChar consisting of every character that looks like one another, so any of the containing values/chars can be equal to each of those QChars, which each bad word is made up of those QChars in a **QString** (See below). A QChar can contain a repetition value, which is used for characters that are required to be repeated. If it is more than 1, this value is displayed before the index when printed out with an **x** before it, for clarification that it is the repetition value. As an example, **ass**, may be printed out as **(0|a|4)(x2|1|s|5)**.
-
-## QStrings
-
-QStrings, short for **Quantum Strings**, is just a collection of **QChar**s, that have many of the same methods as a normal String, because it behaves as one. QStrings can be compared to each other using **#equals**, **#equalsIgnoreCase**, **#contains**, etc. A QString can be created by a normal String to be compared with other QStrings.
+After that, the system goes through each of the characters of the input string, if it comes across an index of a bad word in the final list set above, replace it with a *.

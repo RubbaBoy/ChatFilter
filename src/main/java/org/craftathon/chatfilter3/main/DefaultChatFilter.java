@@ -29,13 +29,13 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Map.entry;
 
 public class DefaultChatFilter implements ChatFilter {
 
     private static Logger LOGGER = LoggerFactory.getLogger(DefaultChatFilter.class);
-    private static final boolean BENCHMARK = false;
 
     private final QChar SPACE;
     private double maxNumberPercentage = 75; // If the percentage a word is numbers is above this percentage, it will not be blocked
@@ -44,6 +44,20 @@ public class DefaultChatFilter implements ChatFilter {
 
     private Set<BadWord> badWords;
     private Set<String> whitelistedWords;
+
+    public static void main(String[] args) {
+        var filter = new DefaultChatFilter();
+        filter.init();
+        Stream.of("4ss", "455").forEach(input -> {
+            System.out.println("```diff");
+            System.out.println("- " + input);
+            filter.blockFullWord = true;
+            System.out.println("+ " + filter.clean(input));
+            filter.blockFullWord = false;
+            System.out.println("+ " + filter.clean(input));
+            System.out.println("```\n");
+        });
+    }
 
 
     public DefaultChatFilter() {
@@ -153,7 +167,7 @@ public class DefaultChatFilter implements ChatFilter {
                         int beginningOfWord = getBeginningOfWord(startingAt, input);
                         int endOfWord = getEndOfWord(startingAt + total, input);
                         String originalWord = input.substring(beginningOfWord, endOfWord).toLowerCase();
-                        if (!whitelistedWords.contains(originalWord.toLowerCase())) {
+                        if (!whitelistedWords.contains(originalWord)) {
                             double percentage = badWord.getNumbers() == 0 ? 0 : badWord.getNumbers() / (double) total * 100D;
 
                             if (percentage < maxNumberPercentage) {
