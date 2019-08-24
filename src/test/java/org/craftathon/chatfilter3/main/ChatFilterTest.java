@@ -1,24 +1,23 @@
 package org.craftathon.chatfilter3.main;
 
+import org.craftathon.chatfilter3.dictionary.DefaultDictionaryManager;
 import org.craftathon.chatfilter3.dictionary.DictionaryManager;
 import org.craftathon.chatfilter3.qobjects.QChar;
 import org.craftathon.chatfilter3.qobjects.QString;
-import org.craftathon.chatfilter3.utils.InlineLinkedHashMap;
-import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ChatFilterTest {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(ChatFilterTest.class);
 
     @Test
     public void checkQCharsOriginality() {
@@ -34,7 +33,7 @@ public class ChatFilterTest {
                 cha = Character.toLowerCase(cha);
                 boolean cont = used.contains(cha);
 
-                if (cont) System.out.println("Duplicate character: \'" + cha + "\'");
+                if (cont) LOGGER.info("Duplicate character: \'{}\'", cha);
 
                 assertFalse(cont);
 
@@ -60,7 +59,7 @@ public class ChatFilterTest {
         ChatFilter chatFilter = new ChatFilter();
         chatFilter.init(Collections.singletonMap("fuck", 1));
 
-        new InlineLinkedHashMap<String, String>(
+       Map.of(
                 "fuck", "****",
                 "fuck test", "**** test",
                 "test fuck", "test ****",
@@ -74,7 +73,7 @@ public class ChatFilterTest {
         ChatFilter chatFilter = new ChatFilter();
         chatFilter.init(Collections.singletonMap("fuck", 1));
 
-        new InlineLinkedHashMap<String, String>(
+        Map.of(
                 "fuck", "****",
                 "fucktest", "********",
                 "testfuck", "********",
@@ -90,7 +89,7 @@ public class ChatFilterTest {
         ChatFilter chatFilter = new ChatFilter();
         chatFilter.init(Collections.singletonMap("a{ss}", 0));
 
-        new InlineLinkedHashMap<String, String>(
+        Map.of(
                 "ass", "***",
                 "as", "as",
                 "asss", "****",
@@ -104,7 +103,7 @@ public class ChatFilterTest {
         ChatFilter chatFilter = new ChatFilter();
         chatFilter.init(Collections.singletonMap("s!ex", 0));
 
-        new InlineLinkedHashMap<String, String>(
+        Map.of(
                 "sex", "***",
                 "test s ex test", "test s ex test",
                 "test seeex test", "test ***** test",
@@ -117,7 +116,7 @@ public class ChatFilterTest {
         chatFilter.init(Collections.singletonMap("a{ss}", 0));
         chatFilter.setMaxNumberPercentage(75);
 
-        new InlineLinkedHashMap<String, String>(
+        Map.of(
                 "ass", "***",
                 "test 45 test", "test 45 test",
                 "test 455 test", "test 455 test",
@@ -130,7 +129,7 @@ public class ChatFilterTest {
         chatFilter.init(Collections.singletonMap("a{ss}", 0), Arrays.asList("assault", "assist"));
         chatFilter.setBlockFullWord(false);
 
-        new InlineLinkedHashMap<String, String>(
+        Map.of(
                 "ass", "***",
                 "assault", "assault",
                 "test assist ass assault", "test assist *** assault",
@@ -139,16 +138,16 @@ public class ChatFilterTest {
 
     @Test
     public void dictionaryDownload() {
-        System.out.println("Downloading/Reading dictionary...");
-        DictionaryManager dictionaryManager = new DictionaryManager();
+        LOGGER.info("Downloading/Reading dictionary...");
+        DictionaryManager dictionaryManager = new DefaultDictionaryManager();
         try {
             dictionaryManager.readFile();
         } catch (URISyntaxException | IOException e) {
-            System.out.println("Problem downloading/reading dictionary. Is the dictionary URL accessible? " + DictionaryManager.DICTIONARY_URL);
+            LOGGER.error("Problem downloading/reading dictionary. Is the dictionary URL accessible? " + DefaultDictionaryManager.DICTIONARY_URL, e);
             e.printStackTrace();
         }
 
-        System.out.println(dictionaryManager.getDictionaryLines().size() + " dictionary lines found.");
+        LOGGER.info("{} dictionary lines found.", dictionaryManager.getDictionaryLines().size());
 
         assertTrue(dictionaryManager.getDictionaryLines().size() > 0);
     }
@@ -159,7 +158,7 @@ public class ChatFilterTest {
         chatFilter.init(Collections.singletonMap("a{ss}", 0));
         chatFilter.setBlockFullWord(false);
 
-        new InlineLinkedHashMap<String, String>(
+        Map.of(
                 "./test", "./test",
                 ".test", ".test",
                 ":test", ":test",
@@ -173,7 +172,7 @@ public class ChatFilterTest {
         chatFilter.init(Collections.singletonMap("fuck", 1));
         chatFilter.setBlockFullWord(false);
 
-        new InlineLinkedHashMap<String, String>(
+        Map.of(
                 "fuck, it", "****, it",
                 "fuck! 111", "****! 111",
                 "fuck! 123", "****! 123").forEach((input, expected) -> assertEquals(expected, chatFilter.clean(input)));

@@ -1,43 +1,42 @@
 package org.craftathon.chatfilter3.main;
 
-public class BlockedWord {
+/**
+ * Represents each word that has been blocked, i.e. each time *'s are shown
+ */
+public interface BlockedWord {
 
-    private int index;
-    private int length;
-    private double numberPercentage;
-    private String originalWord;
-    private BadWord badWord;
+    /**
+     * Gets the index in characters the blocked word is located at.
+     *
+     * @return The index in characters
+     */
+    int getIndex();
 
-    public BlockedWord(int index, int length, double numberPercentage, String originalWord, BadWord badWord) {
-        this.index = index;
-        this.length = length;
-        this.numberPercentage = numberPercentage;
-        this.originalWord = originalWord;
-        this.badWord = badWord;
-    }
+    /**
+     * Gets the length in characters the blocked word is.
+     *
+     * @return The length in characters
+     */
+    int getLength();
 
-    public int getIndex() {
-        return index;
-    }
+    /**
+     * Gets the percentage the word consists of numbers (0-1).
+     *
+     * @return The percentage the word consists of numbers
+     */
+    double getNumberPercentage();
 
-    public int getLength() {
-        return length;
-    }
+    /**
+     * Gets the exact original word being blocked.
+     *
+     * @return The original word
+     */
+    String getOriginalWord();
 
-    public double getNumberPercentage() {
-        return numberPercentage;
-    }
-
-    public String getOriginalWord() {
-        return originalWord;
-    }
-
-    public BadWord getBadWord() {
-        return badWord;
-    }
-
-    @Override
-    public String toString() {
-        return "[index = " + index + ", length = " + length + ", word = " + badWord.toString(true) + "]";
-    }
+    /**
+     * Gets the {@link BadWord} being blocked.
+     *
+     * @return The {@link BadWord} being blocked
+     */
+    BadWord getBadWord();
 }

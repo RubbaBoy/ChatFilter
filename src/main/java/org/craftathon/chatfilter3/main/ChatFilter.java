@@ -1,22 +1,29 @@
 package org.craftathon.chatfilter3.main;
 
+import org.craftathon.chatfilter3.dictionary.DefaultDictionaryManager;
 import org.craftathon.chatfilter3.dictionary.DictionaryManager;
 import org.craftathon.chatfilter3.qobjects.QChar;
 import org.craftathon.chatfilter3.qobjects.QString;
-import org.craftathon.chatfilter3.utils.InlineLinkedHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.Map.entry;
+
 public class ChatFilter {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(ChatFilter.class);
+    private static final boolean BENCHMARK = false;
 
     private final QChar SPACE;
     private double maxNumberPercentage = 75; // If the percentage a word is numbers is above this percentage, it will not be blocked
     private List<Integer> times = new ArrayList<>();
     private boolean blockFullWord = true;
-    private DictionaryManager dictionaryManager = new DictionaryManager();
+    private DictionaryManager dictionaryManager = new DefaultDictionaryManager();
 
     public ChatFilter() {
         this(null);
@@ -35,21 +42,18 @@ public class ChatFilter {
     }
 
     public static void main(String[] args) {
-        boolean benchmark = false;
-
         ChatFilter chatFilter = new ChatFilter(null);
         chatFilter.init();
 
-        System.out.println("chatFilter.whitelisted = " + chatFilter.whitelisted);
-
 //        String input = "45 ass 455 a55 4ss 4ss ass 4ss grass";
 //        String input = "This is a fuuｕｕｕuckin  big asss message of some of the fuckin amazing things that the filter can accomplish ya piece of shit";
-        String input = "i dont like this";
+//        String input = "i dont like this";
 //        String input = "This bitch 4ss shit better work I swear to fucking god";
 //        String input = "What the fuck lmao";
+        var input = "assisttest ass asstest assault";
 
-        if (!benchmark) {
-            System.out.println("Cleaned:\n\t" + input + "\n\t" + chatFilter.clean(input, false));
+        if (!BENCHMARK) {
+            LOGGER.info("Cleaned:\n\t{}\n\t{}", input, chatFilter.clean(input, false));
             return;
         }
 
@@ -63,12 +67,12 @@ public class ChatFilter {
             chatFilter.clean(input, true);
         }
 
-        int sum = chatFilter.times.stream().mapToInt(Integer::intValue).sum();
+        double sum = chatFilter.times.stream().mapToInt(Integer::intValue).sum();
         double average = sum / chatFilter.times.size();
 
-        System.out.println("Cleaned:\n\t" + input + "\n\t" + chatFilter.clean(input, false));
+        LOGGER.info("Cleaned:\n\t{}\n\t{}", input, chatFilter.clean(input, false));
 
-        System.out.println("Average time for x1000 loops: " + average + "ms");
+        LOGGER.info("Average time for x1000 loops: {}ms", average);
     }
 
     public void init() {
@@ -80,21 +84,21 @@ public class ChatFilter {
     }
 
     public void init(Map<String, Integer> words, List<String> whitelisted) {
-        System.out.println("Initializing bad/whitelisted words...");
+        LOGGER.info("Initializing bad/whitelisted words...");
         final long start = System.currentTimeMillis();
 
         badWords.clear();
-        words.forEach((word, priority) -> badWords.add(new BadWord(this, word, priority)));
+        words.forEach((word, priority) -> badWords.add(new DefaultBadWord(this, word, priority)));
 
-        System.out.println("[Whitelist] Adding: " + getWhitelistSubset(whitelisted, true));
+        LOGGER.info("[Whitelist] Adding: {}", getWhitelistSubset(whitelisted, true));
 
         this.whitelisted = getWhitelistSubset(whitelisted, true);
         this.whitelisted.addAll(dictionaryManager.indexWords(new ArrayList<>(badWords)));
         this.whitelisted.removeAll(getWhitelistSubset(whitelisted, false));
 
-        System.out.println("[Whitelist] Removing: " + getWhitelistSubset(whitelisted, false));
+        LOGGER.info("[Whitelist] Removing: {}", getWhitelistSubset(whitelisted, false));
 
-        System.out.println("Completed in " + (System.currentTimeMillis() - start) + "ms");
+        LOGGER.info("Completed in {}ms", System.currentTimeMillis() - start);
     }
 
     private List<String> getWhitelistSubset(List<String> whitelisted, boolean included) {
@@ -124,7 +128,7 @@ public class ChatFilter {
             times.add((int) (System.currentTimeMillis() - start));
         }
 
-        System.out.println("Completed cleaning in " + (System.currentTimeMillis() - start) + "ms");
+        LOGGER.info("Completed cleaning in {}ms", System.currentTimeMillis() - start);
 
         return cleaned;
     }
@@ -133,7 +137,7 @@ public class ChatFilter {
         final long start = System.currentTimeMillis();
         QString inputQString = new QString(this, input).stripRepeating();
 
-        BlockWordQueue blockWordQueue = new BlockWordQueue(this, inputQString);
+        BlockWordQueue blockWordQueue = new DefaultBlockWordQueue(this, inputQString);
 
         this.badWords.parallelStream().forEach(badWord -> {
             int startingAt = 0;
@@ -169,7 +173,7 @@ public class ChatFilter {
                             double percentage = badWord.getNumbers() == 0 ? 0 : badWord.getNumbers() / (double) total * 100D;
 
                             if (percentage < maxNumberPercentage) {
-                                blockWordQueue.addWord(new BlockedWord(blockFullWord ? beginningOfWord : startingAt, blockFullWord ? endOfWord - beginningOfWord : total, percentage, originalWord, badWord));
+                                blockWordQueue.addWord(new SimpleBlockedWord(blockFullWord ? beginningOfWord : startingAt, blockFullWord ? endOfWord - beginningOfWord : total, percentage, originalWord, badWord));
                             }
                         }
 
@@ -245,91 +249,91 @@ public class ChatFilter {
             "-erotica"
     ));
 
-    private InlineLinkedHashMap<String, Integer> blocked = new InlineLinkedHashMap<>(
-            "an!al", 1,
-            "autism", 1,
-            "autistic", 1,
-            "bastard", 1,
-            "biatch", 1,
-            "bitch", 1,
-            "blowjob", 1,
-            "boner", 1,
-            "butthole", 1,
-            "buttplug", 1,
-            "chink", 1,
-            "chode", 1,
-            "clitoris", 1,
-            "cock", 1,
-            "c{oo}n", 1,
-            "creampie", 1,
-            "damn", 1,
-            "dick", 1,
-            "dike", 1,
-            "dildo", 1,
-            "dipshit", 1,
-            "douche", 1,
-            "dyke", 1,
-            "ejaculate", 1,
-            "erection", 1,
-            "erotic", 1,
-            "fuck", 1,
-            "gay", 1,
-            "gringo", 1,
-            "grope", 1,
-            "hacker", 1,
-            "hacks", 1,
-            "haxor", 1,
-            "hitler", 1,
-            "hornie", 1,
-            "horny", 1,
-            "hump", 1,
-            "jerk", 1,
-            "jizz", 1,
-            "kunt", 1,
-            "lube", 1,
-            "masturbate", 1,
-            "nazi", 1,
-            "negro", 1,
-            "nigga", 1,
-            "nigger", 1,
-            "orgasm", 1,
-            "penis", 1,
-            "porn", 1,
-            "pube", 1,
-            "pussi", 1,
-            "pussy", 1,
-            "queer", 1,
-            "retard", 1,
-            "s!ex", 1,
-            "shit", 1,
-            "slut", 1,
-            "suicide", 1,
-            "testicles", 1,
-            "viagra", 1,
-            "whore", 1,
+    private Map<String, Integer> blocked = Map.ofEntries(
+            entry("an!al", 1),
+            entry("autism", 1),
+            entry("autistic", 1),
+            entry("bastard", 1),
+            entry("biatch", 1),
+            entry("bitch", 1),
+            entry("blowjob", 1),
+            entry("boner", 1),
+            entry("butthole", 1),
+            entry("buttplug", 1),
+            entry("chink", 1),
+            entry("chode", 1),
+            entry("clitoris", 1),
+            entry("cock", 1),
+            entry("c{oo}n", 1),
+            entry("creampie", 1),
+            entry("damn", 1),
+            entry("dick", 1),
+            entry("dike", 1),
+            entry("dildo", 1),
+            entry("dipshit", 1),
+            entry("douche", 1),
+            entry("dyke", 1),
+            entry("ejaculate", 1),
+            entry("erection", 1),
+            entry("erotic", 1),
+            entry("fuck", 1),
+            entry("gay", 1),
+            entry("gringo", 1),
+            entry("grope", 1),
+            entry("hacker", 1),
+            entry("hacks", 1),
+            entry("haxor", 1),
+            entry("hitler", 1),
+            entry("hornie", 1),
+            entry("horny", 1),
+            entry("hump", 1),
+            entry("jerk", 1),
+            entry("jizz", 1),
+            entry("kunt", 1),
+            entry("lube", 1),
+            entry("masturbate", 1),
+            entry("nazi", 1),
+            entry("negro", 1),
+            entry("nigga", 1),
+            entry("nigger", 1),
+            entry("orgasm", 1),
+            entry("penis", 1),
+            entry("porn", 1),
+            entry("pube", 1),
+            entry("pussi", 1),
+            entry("pussy", 1),
+            entry("queer", 1),
+            entry("retard", 1),
+            entry("s!ex", 1),
+            entry("shit", 1),
+            entry("slut", 1),
+            entry("suicide", 1),
+            entry("testicles", 1),
+            entry("viagra", 1),
+            entry("whore", 1),
 
-            "a{ss}", 0,
-            "anus", 0,
-            "arse", 0,
-            "balls", 0,
-            "b{oo}b", 0,
-            "breast", 0,
-            "cunt", 0,
-            "fag", 0,
-            "hoe", 0,
-            "ho!mo", 0,
-            "muff", 0,
-            "kike", 0,
-            "kyke", 0,
-            "lesbo", 0,
-            "pi!{ss}", 0,
-            "queaf", 0,
-            "schlong", 0,
-            "spic", 0,
-            "twat", 0,
-            "tard", 0,
-            "wank", 0,
-            "willy", 0
+            entry("a{ss}", 0),
+            entry("anus", 0),
+            entry("arse", 0),
+            entry("balls", 0),
+            entry("b{oo}b", 0),
+            entry("breast", 0),
+            entry("cunt", 0),
+            entry("fag", 0),
+            entry("hoe", 0),
+            entry("ho!mo", 0),
+            entry("muff", 0),
+            entry("kike", 0),
+            entry("kyke", 0),
+            entry("lesbo", 0),
+            entry("pi!{ss}", 0),
+            entry("queaf", 0),
+            entry("schlong", 0),
+            entry("spic", 0),
+            entry("twat", 0),
+            entry("tard", 0),
+            entry("wank", 0),
+            entry("willy", 0)
     );
 
     private List<Character> spacingChars = Arrays.asList(

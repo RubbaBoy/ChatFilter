@@ -25,12 +25,7 @@ public class QChar implements Cloneable {
 
     public QChar(int index, Character... multiple) {
         this.index = index;
-
-        if (this.values.size() == 0) {
-            this.values = Arrays.stream(multiple).collect(Collectors.toList());
-        } else {
-            this.values.addAll(Arrays.stream(multiple).collect(Collectors.toList()));
-        }
+        this.values = Arrays.stream(multiple).collect(Collectors.toList());
     }
 
     public QChar(String formattedQChar) {

@@ -2,198 +2,80 @@ package org.craftathon.chatfilter3.main;
 
 import org.craftathon.chatfilter3.qobjects.QChar;
 
-import java.util.ArrayList;
-import java.util.List;
+/**
+ * Represents a word that should be blocked. Only one of these objects should be made per bad word.
+ */
+public interface BadWord extends Cloneable {
 
-public class BadWord implements Cloneable {
+    /**
+     * Gets the priority of a word.
+     *
+     * @return The word's priority, 1 being highest
+     */
+    int getPriority();
 
-    private ChatFilter chatFilter;
-    private List<QChar> qChars = new ArrayList<>();
-    private int length = 0;
-    private int priority;
+    /**
+     * Gets the length in normal characters the word is.
+     *
+     * @return The word's length
+     */
+    int getLength();
 
-    private int currentIndex = 0;
-    private int letters = 0;
-    private int numbers = 0;
-    private int spaces = 0;
+    /**
+     * Gets the amount of letters processed.
+     *
+     * @return The amount of letters processed
+     */
+    int getLetters();
 
-    private BadWord() {
-    }
+    /**
+     * Gets the amount of numbers processed.
+     *
+     * @return The amount of numbers processed
+     */
+    int getNumbers();
 
-    public BadWord(ChatFilter chatFilter, String word, int priority) {
-        this.chatFilter = chatFilter;
-        this.priority = priority;
+    /**
+     * Gets the amount of spaces processed.
+     *
+     * @return The amount of spaces processed
+     */
+    int getSpaces();
 
-        QChar last = null;
-        boolean inBracket = false;
+    /**
+     * Resets all processed info for the current {@link BadWord}, e.g. {@link BadWord#getLetters()}.
+     */
+    void resetTemporary();
 
-        char[] chas = word.toCharArray();
+    /**
+     * Gets if there is a {@link QChar} available for processing next.
+     *
+     * @return If a {@link QChar} is available
+     */
+    boolean nextAvailable();
 
-        for (int i = 0; i < chas.length; i++) {
-            Character cha = chas[i];
+    /**
+     * Gets if the given {@link QChar} available is part of the current {@link BadWord} or not.
+     *
+     * @param previous The previously parsed {@link QChar}, or null
+     * @param qChar The current {@link QChar}
+     * @return If the {@link QChar} is part of the {@link BadWord}
+     */
+    boolean allowedNext(QChar previous, QChar qChar);
 
-            if (cha == '{') {
-                inBracket = true;
-            } else if (cha == '}') {
-                inBracket = false;
-            } else {
-                if (inBracket) {
-                    if (last != null && last.equals(cha)) {
-                        last.addRepetition(cha);
-                    } else {
-                        last = chatFilter.getQCharFor(cha).setOriginalChar(cha).setIndex(i);
-                        qChars.add(last);
-                    }
+    /**
+     * Gets the original string (Stripped of any rules).
+     *
+     * @return The original string
+     */
+    String getComparingString();
 
-                    length++;
-                    continue;
-                }
-
-                if (last == null || !last.equals(cha)) {
-                    if (cha == '!') {
-                        qChars.add(new QChar(true, i));
-                    } else {
-                        last = chatFilter.getQCharFor(cha).setOriginalChar(cha).setIndex(i);
-                        qChars.add(last);
-                        length++;
-                    }
-                } else {
-                    last.addRepetition(cha);
-                }
-            }
-        }
-    }
-
-    public int getPriority() {
-        return this.priority;
-    }
-
-    public int getLength() {
-        return this.length;
-    }
-
-    public int getLetters() {
-        return this.letters;
-    }
-
-    public int getNumbers() {
-        return this.numbers;
-    }
-
-    public int getSpaces() {
-        return this.spaces;
-    }
-
-    public void resetTemporary() {
-        this.currentIndex = 0;
-        this.letters = 0;
-        this.numbers = 0;
-        this.spaces = 0;
-        this.lastWasSpace = false;
-    }
-
-    public boolean nextAvailable() {
-        return this.currentIndex < this.qChars.size();
-    }
-
-    private boolean lastWasSpace = false;
-
-    public boolean allowedNext(QChar previous, QChar qChar) {
-        QChar current = this.qChars.get(this.currentIndex);
-
-        if (qChar.isSpace(chatFilter)) {
-            lastWasSpace = true;
-            this.spaces += qChar.getRepetition();
-            return !current.isPlaceholder();
-        } else {
-            for (int i = 0; i < qChar.getRepetition(); i++) {
-                if (Character.isDigit(qChar.getOriginalChar(i))) {
-                    this.numbers++;
-                } else {
-                    this.letters++;
-                }
-            }
-
-            this.currentIndex++;
-
-            if (current.isPlaceholder()) {
-                current = this.qChars.get(this.currentIndex);
-                this.currentIndex++;
-            }
-
-        }
-
-        QChar before = this.currentIndex - 2 >= 0 ? this.qChars.get(this.currentIndex - 2) : null;
-
-        if (before != null && lastWasSpace && before.equalsIgnoreCase(qChar)) {
-            lastWasSpace = false;
-            currentIndex--;
-
-            if (priority == 0) {
-                return chatFilter.isSpace(previous);
-            }
-
-            return true;
-        } else if (current.equalsIgnoreCase(qChar) && current.getRepetition() <= qChar.getRepetition()) {
-            lastWasSpace = false;
-            if (priority == 0) {
-                return chatFilter.isSpace(previous) || this.currentIndex != 1;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public String getComparingString() {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        this.qChars.forEach(qChar -> {
-            if (!qChar.isPlaceholder()) {
-                for (int i = 0; i < qChar.getRepetition(); i++) {
-                    stringBuilder.append(qChar.getOriginalChar(i));
-                }
-            }
-        });
-
-        return stringBuilder.toString();
-    }
-
-    @Override
-    public BadWord clone() {
-        BadWord badWord = new BadWord();
-        badWord.qChars = this.qChars;
-        badWord.length = this.length;
-        badWord.priority = this.priority;
-
-        return badWord;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        this.qChars.forEach(qChar -> stringBuilder.append(qChar.isPlaceholder() ? "!" : qChar.toString()));
-
-        return stringBuilder.toString();
-    }
-
-    public String toString(boolean clean) {
-        if (!clean) return toString();
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        this.qChars.forEach(qChar -> {
-            if (qChar.isPlaceholder()) {
-                stringBuilder.append("!");
-            } else {
-                for (int i = 0; i < qChar.getRepetition(); i++) {
-                    stringBuilder.append(qChar.getOriginalChar(i));
-                }
-            }
-        });
-
-        return stringBuilder.toString();
-    }
+    /**
+     * If clean is false, this will output the {@link Object#toString()} of all {@link QChar}s with some extra
+     * formatting. If true, it will output the original string with `!` for any placeholders.
+     *
+     * @param clean If the result should be readable or not
+     * @return The string
+     */
+    String toString(boolean clean);
 }
