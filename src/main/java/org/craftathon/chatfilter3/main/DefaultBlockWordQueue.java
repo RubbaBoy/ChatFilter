@@ -4,13 +4,14 @@ import org.craftathon.chatfilter3.qobjects.QChar;
 import org.craftathon.chatfilter3.qobjects.QString;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DefaultBlockWordQueue implements BlockWordQueue {
 
     private ChatFilter chatFilter;
     private QString qString;
-    private List<BlockedWord> blocked = new ArrayList<>();
+    private List<BlockedWord> blocked = Collections.synchronizedList(new ArrayList<>());
     private long time;
 
     public DefaultBlockWordQueue(ChatFilter chatFilter, QString qString) {

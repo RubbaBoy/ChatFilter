@@ -1,6 +1,7 @@
 package org.craftathon.chatfilter3.main;
 
 import org.craftathon.chatfilter3.qobjects.QChar;
+import org.craftathon.chatfilter3.qobjects.QString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -159,7 +160,7 @@ public class DefaultBadWord implements BadWord {
 
     @Override
     public String getComparingString() {
-        return qChars.stream().filter(Predicate.not(QChar::isPlaceholder)).map(this::getRepeated).collect(Collectors.joining());
+        return qChars.stream().filter(Predicate.not(QChar::isPlaceholder)).map(QString::getRepeated).collect(Collectors.joining());
     }
 
     @Override
@@ -180,14 +181,7 @@ public class DefaultBadWord implements BadWord {
     @Override
     public String toString(boolean clean) {
         return clean ? qChars.stream()
-                .map(qChar -> qChar.isPlaceholder() ? "!" : getRepeated(qChar))
+                .map(qChar -> qChar.isPlaceholder() ? "!" : QString.getRepeated(qChar))
                 .collect(Collectors.joining()) : toString();
-    }
-
-    private String getRepeated(QChar qChar) {
-        return IntStream.range(0, qChar.getRepetition())
-                .mapToObj(qChar::getOriginalChar)
-                .map(String::valueOf)
-                .collect(Collectors.joining());
     }
 }

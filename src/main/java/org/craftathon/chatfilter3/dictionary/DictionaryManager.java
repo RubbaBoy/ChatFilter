@@ -5,6 +5,7 @@ import org.craftathon.chatfilter3.main.BadWord;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Set;
 
 public interface DictionaryManager {
 
@@ -20,9 +21,9 @@ public interface DictionaryManager {
      * Indexes all the dictionary words according the the given {@link BadWord}s.
      *
      * @param badWordList The {@link BadWord}s to index off of
-     * @return The whitelisted words
+     * @return An unmodifiable set of the whitelisted words
      */
-    List<String> indexWords(List<BadWord> badWordList);
+    Set<String> indexWords(Set<BadWord> badWordList);
 
     /**
      * Gets all raw lines of the dictionary

@@ -11,6 +11,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DefaultDictionaryManager implements DictionaryManager {
@@ -35,12 +36,13 @@ public class DefaultDictionaryManager implements DictionaryManager {
     }
 
     @Override
-    public List<String> indexWords(List<BadWord> badWordList) {
-        List<String> whitelist = new ArrayList<>();
-
-        badWordList.stream().map(BadWord::getComparingString).forEach(badWord -> whitelist.addAll(dictionaryLines.stream().filter(line -> !line.equalsIgnoreCase(badWord) && line.contains(badWord) && !line.equalsIgnoreCase(badWord + "s")).collect(Collectors.toList())));
-
-        return whitelist;
+    public Set<String> indexWords(Set<BadWord> badWordList) {
+        return badWordList.stream()
+                .map(BadWord::getComparingString)
+                .flatMap(badWord ->
+                        dictionaryLines.stream()
+                                .filter(line -> !line.equalsIgnoreCase(badWord) && line.contains(badWord) && !line.equalsIgnoreCase(badWord + "s")))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override

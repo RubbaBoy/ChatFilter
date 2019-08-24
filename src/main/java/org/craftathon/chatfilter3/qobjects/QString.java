@@ -4,6 +4,9 @@ import org.craftathon.chatfilter3.main.ChatFilter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class QString {
 
@@ -64,40 +67,22 @@ public class QString {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        qChars.forEach(qChar -> sb.append(qChar.toString()));
-        return sb.toString() + "\n";
+        return qChars.stream().map(QChar::toString).collect(Collectors.joining());
     }
 
     public String reconstruct() {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        for (QChar qChar : this.qChars) {
-            if (!qChar.isPlaceholder()) {
-                for (int i = 0; i < qChar.getRepetition(); i++) {
-                    stringBuilder.append(qChar.getOriginalChar(i));
-                }
-            }
-        }
-
-        return stringBuilder.toString();
+        return qChars.stream().filter(Predicate.not(QChar::isPlaceholder)).map(QString::getRepeated).collect(Collectors.joining());
     }
 
     public String reconstructFrom(int startIndex) {
-        StringBuilder stringBuilder = new StringBuilder();
+        var startIndexArr = new int[] {startIndex};
+        return qChars.stream().filter(qChar -> startIndexArr[0]-- <= 0).filter(Predicate.not(QChar::isPlaceholder)).map(QString::getRepeated).collect(Collectors.joining());
+    }
 
-        for (QChar qChar : this.qChars) {
-            if (startIndex <= 0) {
-                if (!qChar.isPlaceholder()) {
-                    for (int i = 0; i < qChar.getRepetition(); i++) {
-                        stringBuilder.append(qChar.getOriginalChar(i));
-                    }
-                }
-            }
-
-            startIndex--;
-        }
-
-        return stringBuilder.toString();
+    public static String getRepeated(QChar qChar) {
+        return IntStream.range(0, qChar.getRepetition())
+                .mapToObj(qChar::getOriginalChar)
+                .map(String::valueOf)
+                .collect(Collectors.joining());
     }
 }

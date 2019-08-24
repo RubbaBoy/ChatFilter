@@ -21,9 +21,12 @@ public class DefaultChatFilter implements ChatFilter {
 
     private final QChar SPACE;
     private double maxNumberPercentage = 75; // If the percentage a word is numbers is above this percentage, it will not be blocked
-    private List<Integer> times = new ArrayList<>();
     private boolean blockFullWord = true;
     private DictionaryManager dictionaryManager = new DefaultDictionaryManager();
+
+    private Set<BadWord> badWords;
+    private Set<String> whitelistedWords;
+
 
     public DefaultChatFilter() {
         this(null);
@@ -48,7 +51,7 @@ public class DefaultChatFilter implements ChatFilter {
 
     @Override
     public void init(Map<String, Integer> words) {
-        init(words, this.whitelisted);
+        init(words, whitelisted);
     }
 
     @Override
@@ -56,22 +59,28 @@ public class DefaultChatFilter implements ChatFilter {
         LOGGER.debug("Initializing bad/whitelisted words...");
         final long start = System.currentTimeMillis();
 
-        badWords.clear();
-        words.forEach((word, priority) -> badWords.add(new DefaultBadWord(this, word, priority)));
+        badWords = Collections.synchronizedSet(words.entrySet()
+                .parallelStream()
+                .map(entry -> new DefaultBadWord(this, entry.getKey(), entry.getValue()))
+                .collect(Collectors.toUnmodifiableSet()));
 
-        LOGGER.debug("[Whitelist] Adding: {}", getWhitelistSubset(whitelisted, true));
+        whitelistedWords = Collections.synchronizedSet(getWhitelistSubset(whitelisted, true));
+        LOGGER.debug("[Whitelist] Adding non-default: {}", whitelistedWords);
+        whitelistedWords.addAll(dictionaryManager.indexWords(badWords));
 
-        this.whitelisted = getWhitelistSubset(whitelisted, true);
-        this.whitelisted.addAll(dictionaryManager.indexWords(new ArrayList<>(badWords)));
-        this.whitelisted.removeAll(getWhitelistSubset(whitelisted, false));
+        var removing = getWhitelistSubset(whitelisted, false);
+        whitelistedWords.removeAll(removing);
 
-        LOGGER.debug("[Whitelist] Removing: {}", getWhitelistSubset(whitelisted, false));
+        LOGGER.debug("[Whitelist] Removing: {}", removing);
 
         LOGGER.debug("Completed init in {}ms", System.currentTimeMillis() - start);
     }
 
-    private List<String> getWhitelistSubset(List<String> whitelisted, boolean included) {
-        return whitelisted.stream().map(String::toLowerCase).filter(word -> included != word.startsWith("-")).map(word -> !included ? word.substring(1) : word).collect(Collectors.toList());
+    private Set<String> getWhitelistSubset(List<String> whitelisted, boolean included) {
+        return whitelisted.parallelStream().map(String::toLowerCase)
+                .filter(word -> included != word.startsWith("-"))
+                .map(word -> !included ? word.substring(1) : word)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -92,17 +101,17 @@ public class DefaultChatFilter implements ChatFilter {
     @Override
     public BlockWordQueue cleanUnapplied(String input) {
         final long start = System.currentTimeMillis();
-        QString inputQString = new QString(this, input).stripRepeating();
+        var inputQString = new QString(this, input).stripRepeating();
 
-        BlockWordQueue blockWordQueue = new DefaultBlockWordQueue(this, inputQString);
+        var blockWordQueue = new DefaultBlockWordQueue(this, inputQString);
 
-        this.badWords.parallelStream().forEach(badWord -> {
+        badWords.parallelStream().forEach(badWord -> {
             int startingAt = 0;
             int adding = 0;
             for (int i = 0; i < inputQString.getIteratingLength(); i++) {
-                QChar previous = inputQString.qCharAt(i - 1);
-                QChar current = inputQString.qCharAt(i);
-                QChar next = inputQString.qCharAt(i + 1);
+                var previous = inputQString.qCharAt(i - 1);
+                var current = inputQString.qCharAt(i);
+                var next = inputQString.qCharAt(i + 1);
                 adding += current.getRepetition();
 
                 if (isSpace(current)) {
@@ -126,7 +135,7 @@ public class DefaultChatFilter implements ChatFilter {
                         int beginningOfWord = getBeginningOfWord(startingAt, input);
                         int endOfWord = getEndOfWord(startingAt + total, input);
                         String originalWord = input.substring(beginningOfWord, endOfWord).toLowerCase();
-                        if (!this.whitelisted.contains(originalWord.toLowerCase())) {
+                        if (!whitelistedWords.contains(originalWord.toLowerCase())) {
                             double percentage = badWord.getNumbers() == 0 ? 0 : badWord.getNumbers() / (double) total * 100D;
 
                             if (percentage < maxNumberPercentage) {
@@ -145,11 +154,8 @@ public class DefaultChatFilter implements ChatFilter {
         });
 
         blockWordQueue.sort();
-
         blockWordQueue.removeOverlaps();
-
         blockWordQueue.setTime(System.currentTimeMillis() - start);
-
         return blockWordQueue;
     }
 
@@ -172,26 +178,27 @@ public class DefaultChatFilter implements ChatFilter {
 
     @Override
     public QChar getQCharFor(Character character) {
-        for (QChar qChar : this.quantumCharList) {
-            if (qChar.equalsIgnoreCase(character)) return qChar.clone();
-        }
-
-        return new QChar(-1, character);
+        return quantumCharList.stream()
+                .filter(qChar -> qChar.equalsIgnoreCase(character))
+                .findFirst()
+                .map(QChar::clone)
+                .orElse(new QChar(-1, character));
     }
 
     @Override
     public boolean isSpace(QChar qChar) {
-        if (qChar == null) return true;
-        return SPACE.equalsExact(qChar);
+        return qChar == null || SPACE.equalsExact(qChar);
     }
 
     public static Map<String, Integer> getBlocked() {
         return blocked;
     }
 
-    private Set<BadWord> badWords = new HashSet<>();
+    public static List<String> getWhitelisted() {
+        return whitelisted;
+    }
 
-    private List<String> whitelisted = new ArrayList<>(Arrays.asList(
+    private static List<String> whitelisted = Arrays.asList(
             "-livesex",
             "-worldsex",
             "-dicke",
@@ -210,7 +217,7 @@ public class DefaultChatFilter implements ChatFilter {
             "-sexuality",
             "-sexually",
             "-erotica"
-    ));
+    );
 
     private static Map<String, Integer> blocked = Map.ofEntries(
             entry("an!al", 1),

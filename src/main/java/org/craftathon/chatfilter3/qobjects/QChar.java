@@ -31,7 +31,7 @@ public class QChar implements Cloneable {
     public QChar(String formattedQChar) {
         try {
             if (formattedQChar.length() < 3 && formattedQChar.startsWith("(") && formattedQChar.endsWith(")"))
-                throw new QChar.InvalidQCharFormatException("Invalid length or doesn't have beginning/end parentheses");
+                throw new InvalidQCharFormatException("Invalid length or doesn't have beginning/end parentheses");
             formattedQChar = formattedQChar.substring(1, formattedQChar.length() - 1);
             this.values.addAll(splitCharArray(formattedQChar.toLowerCase().toCharArray()));
         } catch (InvalidQCharFormatException e) {
@@ -49,7 +49,7 @@ public class QChar implements Cloneable {
                 ret.add(cha);
             } else {
                 if (cha != '|') {
-                    throw new QChar.InvalidQCharFormatException("No pipe separator found at index " + index);
+                    throw new InvalidQCharFormatException("No pipe separator found at index " + index);
                 }
             }
 
@@ -108,8 +108,8 @@ public class QChar implements Cloneable {
     }
 
     public boolean equalsIgnoreCase(QChar qChar) {
-        List<Character> loopingFrom = qChar.values.size() > this.values.size() ? toLowercaseList(qChar.values) : toLowercaseList(this.values);
-        List<Character> gettingFrom = qChar.values.size() > this.values.size() ? toLowercaseList(this.values) : toLowercaseList(qChar.values);
+        var loopingFrom = qChar.values.size() > this.values.size() ? toLowercaseList(qChar.values) : toLowercaseList(this.values);
+        var gettingFrom = qChar.values.size() > this.values.size() ? toLowercaseList(this.values) : toLowercaseList(qChar.values);
 
         return loopingFrom.stream().anyMatch(gettingFrom::contains);
     }
@@ -159,7 +159,7 @@ public class QChar implements Cloneable {
         return chatFilter.isSpace(this);
     }
 
-    public class InvalidQCharFormatException extends Exception {
+    public static class InvalidQCharFormatException extends Exception {
         InvalidQCharFormatException(String message) {
             super(message);
         }

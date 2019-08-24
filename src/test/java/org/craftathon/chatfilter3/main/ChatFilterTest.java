@@ -27,6 +27,7 @@ public class ChatFilterTest {
     public static void setUp() {
         chatFilter = new DefaultChatFilter();
         var blocked = new HashMap<>(DefaultChatFilter.getBlocked());
+        var whitelist = new ArrayList<>(DefaultChatFilter.getWhitelisted());
         // Blocked and whitelist are to ensure that the necessary inputs are available during most tests, so the logic
         // of the code is working properly. Some edge cases may occur while all words are available, which is why they
         // are also added. It may be worth having two runs of tests: One as it is now, and one with just the words
@@ -38,7 +39,8 @@ public class ChatFilterTest {
         ));
         chatFilter.setBlockFullWord(false);
         chatFilter.setMaxNumberPercentage(75);
-        chatFilter.init(blocked, Arrays.asList("assault", "assist"));
+        whitelist.addAll(Arrays.asList("assault", "assist"));
+        chatFilter.init(blocked, whitelist);
     }
 
     @Test
@@ -52,7 +54,7 @@ public class ChatFilterTest {
                 cha = Character.toLowerCase(cha);
                 boolean cont = used.contains(cha);
 
-                if (cont) LOGGER.info("Duplicate character: \'{}\'", cha);
+                if (cont) LOGGER.error("Duplicate character: \'{}\'", cha);
 
                 assertFalse(cont);
 
