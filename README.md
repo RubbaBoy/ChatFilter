@@ -1,6 +1,6 @@
 ## ChatFilter v3
 
-This is the official chat filter of [Craftathon](https://craftathon.org/), copied from the [Craftathon](https://github.com/Craftathon/) GitHub organization, originally made in mid-late December of 2018. This could be improved and may be later on. This is the third rewrite of the filter, and a full feature specification document may be found [here](https://github.com/RubbaBoy/ChatFilter/Specifications.md), which is highly recommended if you are interested in this.
+This is the official chat filter of [Craftathon](https://craftathon.org/), copied from the [Craftathon](https://github.com/Craftathon/) GitHub organization, originally made in mid-late December of 2018. This could be improved and may be later on. This is the third rewrite of the filter, and a full feature specification document may be found [here](https://github.com/RubbaBoy/ChatFilter/blob/master/Specifications.md) ([or on Google Docs](https://docs.google.com/document/d/1AangW6Jv_X2TmRq8W-VM0TtWohxPGtAXCM7xruTTTjU/edit?usp=sharing)), which is highly recommended if you are interested in this.
 
 ## Benchmarks
 
