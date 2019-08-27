@@ -1,0 +1,23 @@
+name: Java CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  Ubuntu:
+    name: Run Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up JDK 12
+        uses: actions/setup-java@v1
+        with:
+          java-version: 12
+      - name: Print gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew --version
+      - name: Test
+        run: ./gradlew test
