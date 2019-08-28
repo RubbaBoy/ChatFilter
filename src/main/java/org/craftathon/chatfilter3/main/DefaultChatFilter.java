@@ -211,7 +211,19 @@ public class DefaultChatFilter implements ChatFilter {
         return blocked;
     }
 
+    public static Map<String, Integer> getBlocked(Map<String, Integer> adding) {
+        var blocked = new HashMap<>(getBlocked());
+        blocked.putAll(adding);
+        return blocked;
+    }
+
     public static List<String> getWhitelisted() {
+        return whitelisted;
+    }
+
+    public static List<String> getWhitelisted(List<String> adding) {
+        var whitelisted = new ArrayList<>(getWhitelisted());
+        whitelisted.addAll(adding);
         return whitelisted;
     }
 

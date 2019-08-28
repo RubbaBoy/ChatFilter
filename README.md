@@ -2,6 +2,10 @@
 
 This is the official chat filter of [Craftathon](https://craftathon.org/), copied from the [Craftathon](https://github.com/Craftathon/) GitHub organization, originally made in mid-late December of 2018. This could be improved and may be later on. This is the third rewrite of the filter, and a full feature specification document may be found [here](https://github.com/RubbaBoy/ChatFilter/blob/master/Specifications.md) ([or on Google Docs](https://docs.google.com/document/d/1AangW6Jv_X2TmRq8W-VM0TtWohxPGtAXCM7xruTTTjU/edit?usp=sharing)), which is highly recommended if you are interested in this.
 
+- [Benchmarks](#Benchmarks)
+- [Filter Examples](#Filter-Examples)
+- [Code Examples](#Code-Examples)
+
 ## Benchmarks
 
 Just before releasing this repo I made some (very) small optimizations, and also added a benchmarking test to it. It is tested with SwearIpsum ([Example](https://rubbaboy.me/code/s82d84j)) generated in the [SwearIpsum](https://github.com/RubbaBoy/ChatFilter/blob/master/benchmark/src/main/java/com/craftathon/chatfilter3/utils/SwearIpsum.java#L39) class. The current results are below, the long and short message lines are below respectively:
@@ -24,7 +28,7 @@ BenchmarkChatFilter.filterSingleLong   avgt   40  4724.346 ± 24.654  us/op
 BenchmarkChatFilter.filterSingleShort  avgt   40   892.203 ± 16.233  us/op
 ```
 
-## Examples
+## Filter Examples
 
 The following are some examples of filtered text, before and with the `ChatFilter#blockFullWord(boolean)` option enabled/disabled. Some are labeled with more specific features being demonstrated.
 
@@ -85,3 +89,57 @@ By default, words are considered unrecognizable if consisting of 75% or more num
 + 455
 + 455
 ```
+
+
+
+## Code Examples
+
+Using the filter is pretty simple. Soon the repo will probably be on Central, though right now it's just on JitPack. To obtain the rep, simply put
+
+```groovy
+repositories {
+	maven { url 'https://jitpack.io' }
+}
+```
+
+And
+
+```groovy
+dependencies {
+	implementation 'com.github.RubbaBoy:ChatFilter:master-SNAPSHOT'
+}
+```
+
+To your build.gradle. To use it with maven, just look [here](https://jitpack.io/#RubbaBoy/ChatFilter/master-SNAPSHOT) because I can't be fucked to fill half this readme with the verbose shit maven is.
+
+To use the filter, you need to get an instance of `ChatFilter` via
+
+```java
+var chatFilter = new DefaultChatFilter();
+chatFilter.init();
+```
+
+Then to filter words, just do
+
+```java
+var cleaned = chatFilter.clean("A fuucking string shiiiittt right here.");
+```
+
+And you can use whatever string you want. This string results in `A ******** string ********* right here.`.
+
+To add custom bad words, you can get the default HashMap of them and just add to that, or give it a custom map. The method below gets the default bad words, and adds the given map to a copy of them.
+
+```java
+chatFilter.init(DefaultChatFilter.getBlocked(Map.of("dog", 1)));
+```
+
+This acts as expected, with the following code and output after being initialized with that
+
+```java
+var cleaned = chatFilter.clean("I like dogs, really any king of d0g.");
+```
+
+```
+I like ***** really any king of ****
+```
+
