@@ -45,21 +45,6 @@ public class DefaultChatFilter implements ChatFilter {
     private Set<BadWord> badWords;
     private Set<String> whitelistedWords;
 
-    public static void main(String[] args) {
-        var filter = new DefaultChatFilter();
-        filter.init();
-        Stream.of("4ss", "455").forEach(input -> {
-            System.out.println("```diff");
-            System.out.println("- " + input);
-            filter.blockFullWord = true;
-            System.out.println("+ " + filter.clean(input));
-            filter.blockFullWord = false;
-            System.out.println("+ " + filter.clean(input));
-            System.out.println("```\n");
-        });
-    }
-
-
     public DefaultChatFilter() {
         this(null);
     }
